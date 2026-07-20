@@ -95,6 +95,11 @@
     .mensaje-ok  { background: #e8f8f0; color: #2e7d52; border-radius: 10px; padding: 14px; text-align: center; font-weight: 500; font-size: .9rem; display: none; margin-top: 12px; }
     .mensaje-err { background: #fdeef2; color: var(--error); border-radius: 10px; padding: 14px; text-align: center; font-weight: 500; font-size: .9rem; display: none; margin-top: 12px; }
     .oculto { display: none !important; }
+    @keyframes highlight-campo {
+      0%   { box-shadow: 0 0 0 5px rgba(255,137,187,0.55); border-color: var(--rosa-fuerte); }
+      100% { box-shadow: none; }
+    }
+    .campo-highlight { animation: highlight-campo 1.8s ease-out; }
     @media (max-width: 480px) {
       .seccion, .seccion-id, .footer-paso { padding-left: 20px; padding-right: 20px; }
       .fila-2 { grid-template-columns: 1fr; }
@@ -290,9 +295,60 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYzkBbTnNcbsEpCKxB-
 let serviciosData = [];
 const st = {
   idClienta: '', requiereAnticipo: true,
-  servicioId: '', servicioCategoria: '', anticopoMonto: 0,
+  servicioId: '', servicioCategoria: '', servicioNombre: '', anticopoMonto: 0,
   archivos: { referencia: null, comprobante: null }
 };
+
+// ── Zonas de piercing por tipo de servicio ────────────────
+const ZONAS_PIR_GRUPOS = {
+  oreja:   ['Lobulo','Helix / Cartilago','Tragus / Antitragus','Industrial'],
+  nasal:   ['Fosa nasal'],
+  septum:  ['Septum'],
+  labio:   ['Labio / Philtrum'],
+  lengua:  ['Lengua'],
+  ceja:    ['Ceja'],
+  ombligo: ['Ombligo'],
+  dermal:  ['Superficie / Dermal'],
+  todas:   ['Lobulo','Helix / Cartilago','Tragus / Antitragus','Industrial',
+            'Septum','Fosa nasal','Labio / Philtrum','Lengua','Ceja',
+            'Ombligo','Superficie / Dermal']
+};
+
+function zonasParaServicio(nombreServicio) {
+  const n = (nombreServicio || '').toLowerCase();
+  const set = new Set();
+  if (n.includes('oreja') || n.includes('lobulo') || n.includes('helix') ||
+      n.includes('tragus') || n.includes('industrial') || n.includes('cartilago'))
+    ZONAS_PIR_GRUPOS.oreja.forEach(z => set.add(z));
+  if (n.includes('nostril') || n.includes('nasal') || n.includes('nariz') || n.includes('fosa'))
+    ZONAS_PIR_GRUPOS.nasal.forEach(z => set.add(z));
+  if (n.includes('septum'))
+    ZONAS_PIR_GRUPOS.septum.forEach(z => set.add(z));
+  if (n.includes('labio') || n.includes('philtrum'))
+    ZONAS_PIR_GRUPOS.labio.forEach(z => set.add(z));
+  if (n.includes('lengua'))
+    ZONAS_PIR_GRUPOS.lengua.forEach(z => set.add(z));
+  if (n.includes('ceja'))
+    ZONAS_PIR_GRUPOS.ceja.forEach(z => set.add(z));
+  if (n.includes('ombligo'))
+    ZONAS_PIR_GRUPOS.ombligo.forEach(z => set.add(z));
+  if (n.includes('superficie') || n.includes('dermal'))
+    ZONAS_PIR_GRUPOS.dermal.forEach(z => set.add(z));
+  // Si no detectamos nada específico → todas las zonas
+  const lista = set.size > 0 ? [...set] : [...ZONAS_PIR_GRUPOS.todas];
+  lista.push('otro'); // siempre al final
+  return lista;
+}
+
+function actualizarZonasPiercing(nombreServicio) {
+  const zonas = zonasParaServicio(nombreServicio);
+  $('zona-pir').innerHTML = '<option value="">Selecciona la zona</option>' +
+    zonas.map(z => z === 'otro'
+      ? '<option value="otro">Otro (especificar)</option>'
+      : '<option>' + z + '</option>'
+    ).join('');
+  $('zona-pir-otro').classList.add('oculto');
+}
 
 // ── Init ──────────────────────────────────────────────────
 window.addEventListener('load', function() {
@@ -360,6 +416,14 @@ function continuarSinId() {
   st.idClienta = ''; st.requiereAnticipo = true;
   $('id-resultado').innerHTML = '';
   $('inp-id').value = ''; $('inp-id-fecha').value = '';
+  // Llevar a la clienta directo al campo de nombre
+  const campo = $('inp-nombre');
+  campo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(function() {
+    campo.focus();
+    campo.classList.add('campo-highlight');
+    setTimeout(function() { campo.classList.remove('campo-highlight'); }, 1800);
+  }, 400);
 }
 
 function verificarMenor() {
@@ -423,10 +487,16 @@ async function cargarServicios() {
 function onServicioChange() {
   const id = $('inp-servicio').value; if (!id) return;
   const svc = serviciosData.find(s => s.id === id) || {};
-  st.servicioId = id; st.servicioCategoria = id.substring(0,3).toUpperCase(); st.anticopoMonto = svc.anticopoMonto || 0;
+  st.servicioId        = id;
+  st.servicioCategoria = id.substring(0,3).toUpperCase();
+  st.servicioNombre    = svc.nombre || '';
+  st.anticopoMonto     = svc.anticopoMonto || 0;
   mostrarError('err-zona-tat', false); marcarCampo('zona-tat', false);
   mostrarError('err-zona-pir', false); marcarCampo('zona-pir', false);
-  actualizarZona(); actualizarComprobante(); cargarDias(id); cargarConsideraciones(st.servicioCategoria);
+  actualizarZona();
+  // Filtrar zonas de piercing según el servicio específico
+  if (st.servicioCategoria === 'PIR') actualizarZonasPiercing(st.servicioNombre);
+  actualizarComprobante(); cargarDias(id); cargarConsideraciones(st.servicioCategoria);
   $('inp-dia').innerHTML  = '<option value="">Buscando dias disponibles...</option>';
   $('inp-hora').innerHTML = '<option value="">Elige un dia primero</option>';
 }
