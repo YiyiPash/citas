@@ -142,7 +142,7 @@
                 style="padding:9px 18px;background:var(--rosa-fuerte);color:white;border:none;border-radius:10px;font-size:.85rem;font-family:inherit;font-weight:500;cursor:pointer">
           Verificar
         </button>
-        <span class="id-link" onclick="continuarSinId()">Primera vez aqui? — continua sin ID"</span>
+        <span class="id-link" onclick="continuarSinId()">Primera vez aqui? — continua sin ID, coloca tus datos en la seccion 1 "Tus datos"</span>
       </div>
       <div id="id-resultado" style="margin-top:8px;font-size:.85rem"></div>
     </div>
@@ -299,54 +299,20 @@ const st = {
   archivos: { referencia: null, comprobante: null }
 };
 
-// ── Zonas de piercing por tipo de servicio ────────────────
-const ZONAS_PIR_GRUPOS = {
-  oreja:   ['Lobulo','Helix / Cartilago','Tragus / Antitragus','Industrial'],
-  nasal:   ['Fosa nasal'],
-  septum:  ['Septum'],
-  labio:   ['Labio / Philtrum'],
-  lengua:  ['Lengua'],
-  ceja:    ['Ceja'],
-  ombligo: ['Ombligo'],
-  dermal:  ['Superficie / Dermal'],
-  todas:   ['Lobulo','Helix / Cartilago','Tragus / Antitragus','Industrial',
-            'Septum','Fosa nasal','Labio / Philtrum','Lengua','Ceja',
-            'Ombligo','Superficie / Dermal']
-};
+// ── Zonas de piercing ─────────────────────────────────────
+// Lista completa como respaldo si el catálogo no tiene zonas definidas
+const TODAS_ZONAS_PIR = ['Lobulo','Helix / Cartilago','Tragus / Antitragus',
+  'Industrial','Septum','Fosa nasal','Labio / Philtrum','Lengua',
+  'Ceja','Ombligo','Superficie / Dermal'];
 
-function zonasParaServicio(nombreServicio) {
-  const n = (nombreServicio || '').toLowerCase();
-  const set = new Set();
-  if (n.includes('oreja') || n.includes('lobulo') || n.includes('helix') ||
-      n.includes('tragus') || n.includes('industrial') || n.includes('cartilago'))
-    ZONAS_PIR_GRUPOS.oreja.forEach(z => set.add(z));
-  if (n.includes('nostril') || n.includes('nasal') || n.includes('nariz') || n.includes('fosa'))
-    ZONAS_PIR_GRUPOS.nasal.forEach(z => set.add(z));
-  if (n.includes('septum'))
-    ZONAS_PIR_GRUPOS.septum.forEach(z => set.add(z));
-  if (n.includes('labio') || n.includes('philtrum'))
-    ZONAS_PIR_GRUPOS.labio.forEach(z => set.add(z));
-  if (n.includes('lengua'))
-    ZONAS_PIR_GRUPOS.lengua.forEach(z => set.add(z));
-  if (n.includes('ceja'))
-    ZONAS_PIR_GRUPOS.ceja.forEach(z => set.add(z));
-  if (n.includes('ombligo'))
-    ZONAS_PIR_GRUPOS.ombligo.forEach(z => set.add(z));
-  if (n.includes('superficie') || n.includes('dermal'))
-    ZONAS_PIR_GRUPOS.dermal.forEach(z => set.add(z));
-  // Si no detectamos nada específico → todas las zonas
-  const lista = set.size > 0 ? [...set] : [...ZONAS_PIR_GRUPOS.todas];
-  lista.push('otro'); // siempre al final
-  return lista;
-}
-
-function actualizarZonasPiercing(nombreServicio) {
-  const zonas = zonasParaServicio(nombreServicio);
+function actualizarZonasPiercing(zonasCatalogo) {
+  // Si el catálogo tiene zonas definidas las usa; si no, muestra todas
+  const lista = (zonasCatalogo && zonasCatalogo.length > 0)
+    ? zonasCatalogo
+    : TODAS_ZONAS_PIR;
   $('zona-pir').innerHTML = '<option value="">Selecciona la zona</option>' +
-    zonas.map(z => z === 'otro'
-      ? '<option value="otro">Otro (especificar)</option>'
-      : '<option>' + z + '</option>'
-    ).join('');
+    lista.map(z => '<option>' + z + '</option>').join('') +
+    '<option value="otro">Otro (especificar)</option>';
   $('zona-pir-otro').classList.add('oculto');
 }
 
@@ -495,7 +461,7 @@ function onServicioChange() {
   mostrarError('err-zona-pir', false); marcarCampo('zona-pir', false);
   actualizarZona();
   // Filtrar zonas de piercing según el servicio específico
-  if (st.servicioCategoria === 'PIR') actualizarZonasPiercing(st.servicioNombre);
+  if (st.servicioCategoria === 'PIR') actualizarZonasPiercing(svc.zonas || []);
   actualizarComprobante(); cargarDias(id); cargarConsideraciones(st.servicioCategoria);
   $('inp-dia').innerHTML  = '<option value="">Buscando dias disponibles...</option>';
   $('inp-hora').innerHTML = '<option value="">Elige un dia primero</option>';
