@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yiyipash – Agenda tu cita</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rosa:        #fed1e6;
+      --rosa-fuerte: #ff89bb;
+      --rosa-oscuro: #ff6aa8;
+      --blanco:      #ffffff;
+      --texto:       #2a1a22;
+      --texto-suave: #7a5c6e;
+      --borde:       #f5c0d8;
+      --error:       #e05a7a;
+      --ok:          #4caf7d;
+      --warn-bg:     #fff8e1;
+      --warn-borde:  #ffc107;
+      --warn-texto:  #7a5c00;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: linear-gradient(135deg, #fff0f7 0%, #fed1e6 50%, #ffc0d8 100%);
+      min-height: 100vh;
+      padding: 36px 16px 60px;
+    }
+    .encabezado { text-align: center; margin-bottom: 28px; }
+    .logo-txt {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 3rem;
+      color: var(--rosa-fuerte);
+      letter-spacing: -1px;
+    }
+    .subtitulo { font-size: 0.88rem; color: var(--texto-suave); margin-top: 6px; font-weight: 300; }
+    .card {
+      background: var(--blanco);
+      border-radius: 24px;
+      max-width: 520px;
+      margin: 0 auto;
+      box-shadow: 0 8px 40px rgba(255,137,187,0.2);
+      overflow: hidden;
+    }
+    .progreso { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 18px 0 14px; border-bottom: 1.5px solid #fff0f7; }
+    .p-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--borde); transition: background .3s; }
+    .p-dot.activo { background: var(--rosa-fuerte); }
+    .p-linea { width: 40px; height: 2px; background: var(--borde); }
+    .seccion { padding: 22px 28px; border-bottom: 1.5px solid #fff0f7; }
+    .seccion:last-child { border-bottom: none; }
+    .sec-titulo { font-family: "Playfair Display", serif; font-size: 1.05rem; color: var(--texto); margin-bottom: 18px; display: flex; align-items: center; gap: 9px; }
+    .sec-num { background: var(--rosa-fuerte); color: white; width: 23px; height: 23px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.73rem; font-family: "DM Sans", sans-serif; font-weight: 500; flex-shrink: 0; }
+    .seccion-id { padding: 16px 28px; background: #fff8fc; border-bottom: 1.5px solid #fff0f7; }
+    .id-titulo { font-size: 0.78rem; font-weight: 500; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    #id-resultado { margin-top: 8px; font-size: .85rem; }
+    .id-encontrada { color: var(--ok); font-weight: 500; }
+    .id-no-encontrada { color: var(--error); }
+    .id-link { margin-top: 8px; font-size: .8rem; color: var(--rosa-fuerte); cursor: pointer; text-decoration: underline; display: inline-block; }
+    .id-link:hover { color: var(--rosa-oscuro); }
+    .campo { margin-bottom: 14px; }
+    .campo:last-child { margin-bottom: 0; }
+    label { display: block; font-size: .75rem; font-weight: 500; color: var(--texto-suave); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="number"], input[type="date"], select {
+      width: 100%; padding: 10px 13px; border: 1.5px solid var(--borde); border-radius: 10px;
+      font-size: .92rem; font-family: "DM Sans", sans-serif; color: var(--texto);
+      background: #fffafe; transition: border .2s, box-shadow .2s; -webkit-appearance: none;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--rosa-fuerte); box-shadow: 0 0 0 3px rgba(255,137,187,0.15); }
+    input.campo-error, select.campo-error { border-color: var(--error); }
+    input[type="file"] { padding: 9px 12px; background: #fff8fc; cursor: pointer; font-size: .85rem; width: 100%; border: 1.5px solid var(--borde); border-radius: 10px; }
+    .fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .campo-hint { font-size: .75rem; color: var(--texto-suave); margin-top: 4px; }
+    .error-txt { font-size: .75rem; color: var(--error); margin-top: 3px; display: none; }
+    .aviso-menor { background: var(--warn-bg); border: 1.5px solid var(--warn-borde); border-radius: 10px; padding: 11px 14px; font-size: .83rem; color: var(--warn-texto); margin-top: 10px; line-height: 1.5; display: none; }
+    .footer-paso { padding: 20px 28px; border-top: 1.5px solid #fff0f7; }
+    .btn-sig { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--rosa-fuerte), var(--rosa-oscuro)); color: white; border: none; border-radius: 12px; font-size: .97rem; font-weight: 500; font-family: "DM Sans", sans-serif; cursor: pointer; transition: all .25s; letter-spacing: .3px; }
+    .btn-sig:hover { box-shadow: 0 6px 20px rgba(255,137,187,.45); transform: translateY(-1px); }
+    .atras-link { display: inline-block; padding: 14px 28px 0; font-size: .82rem; color: var(--rosa-fuerte); cursor: pointer; text-decoration: none; }
+    .atras-link:hover { color: var(--rosa-oscuro); text-decoration: underline; }
+    .cons-box { background: linear-gradient(135deg, #fff0f7, #ffe8f3); border: 1.5px solid var(--borde); border-radius: 12px; padding: 14px 16px; font-size: .85rem; color: var(--texto-suave); line-height: 1.7; }
+    .cons-box ul, .tyc-box ul { padding-left: 16px; }
+    .cons-box li, .tyc-box li { margin-bottom: 3px; }
+    #seccion-cons { display: none; }
+    .tyc-box { background: #fff8fc; border: 1.5px solid var(--borde); border-radius: 12px; padding: 14px 16px; font-size: .83rem; color: var(--texto-suave); line-height: 1.65; margin-bottom: 14px; max-height: 180px; overflow-y: auto; }
+    .check-label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; font-size: .85rem; color: var(--texto); line-height: 1.5; }
+    .check-label input[type="checkbox"] { width: 17px; height: 17px; min-width: 17px; border: 2px solid var(--rosa-fuerte); border-radius: 4px; cursor: pointer; accent-color: var(--rosa-fuerte); margin-top: 2px; }
+    #seccion-comp { display: none; }
+    .btn-enviar { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--rosa-fuerte), var(--rosa-oscuro)); color: white; border: none; border-radius: 12px; font-size: .97rem; font-weight: 500; font-family: "DM Sans", sans-serif; cursor: pointer; transition: all .25s; }
+    .btn-enviar:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(255,137,187,.45); transform: translateY(-1px); }
+    .btn-enviar:disabled { background: #e0c8d4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .spinner { text-align: center; padding: 10px; color: var(--texto-suave); font-size: .85rem; display: none; }
+    .mensaje-ok  { background: #e8f8f0; color: #2e7d52; border-radius: 10px; padding: 14px; text-align: center; font-weight: 500; font-size: .9rem; display: none; margin-top: 12px; }
+    .mensaje-err { background: #fdeef2; color: var(--error); border-radius: 10px; padding: 14px; text-align: center; font-weight: 500; font-size: .9rem; display: none; margin-top: 12px; }
+    .oculto { display: none !important; }
+    @media (max-width: 480px) {
+      .seccion, .seccion-id, .footer-paso { padding-left: 20px; padding-right: 20px; }
+      .fila-2 { grid-template-columns: 1fr; }
+      .logo-txt { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="encabezado">
+  <div class="logo-txt">YiyiPash Studio</div>
+  <div class="subtitulo">Agenda tu cita — te esperamos</div>
+</div>
+
+<div class="card">
+  <div class="progreso">
+    <div class="p-dot activo" id="dot-1"></div>
+    <div class="p-linea"></div>
+    <div class="p-dot" id="dot-2"></div>
+  </div>
+
+  <!-- PASO 1 -->
+  <div id="paso-1">
+    <div class="seccion-id">
+      <div class="id-titulo">Ya eres clienta? Verifica tu identidad</div>
+      <div class="campo" style="margin-bottom:10px">
+        <input type="text" id="inp-id" placeholder="Tu ID (ej. YYY-PPPP)"
+               style="width:100%;padding:9px 12px;border:1.5px solid var(--borde);border-radius:10px;font-size:.9rem;font-family:inherit;color:var(--texto);background:var(--blanco)"
+               onkeydown="if(event.key==='Enter') verificarId()">
+      </div>
+      <div class="campo" style="margin-bottom:10px">
+        <label style="font-size:.73rem;font-weight:500;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">
+          Confirma tu fecha de nacimiento
+        </label>
+        <input type="date" id="inp-id-fecha"
+               style="width:100%;padding:9px 12px;border:1.5px solid var(--borde);border-radius:10px;font-size:.9rem;font-family:inherit;color:var(--texto);background:var(--blanco)">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button onclick="verificarId()"
+                style="padding:9px 18px;background:var(--rosa-fuerte);color:white;border:none;border-radius:10px;font-size:.85rem;font-family:inherit;font-weight:500;cursor:pointer">
+          Verificar
+        </button>
+        <span class="id-link" onclick="continuarSinId()">Primera vez aqui? — continua sin ID, coloca tus datos en la seccion 1 "Tus datos"</span>
+      </div>
+      <div id="id-resultado" style="margin-top:8px;font-size:.85rem"></div>
+    </div>
+
+    <div class="seccion">
+      <div class="sec-titulo"><span class="sec-num">1</span> Tus datos</div>
+      <div class="campo">
+        <label>Nombre completo *</label>
+        <input type="text" id="inp-nombre" autocomplete="name">
+        <div class="error-txt" id="err-nombre">Ingresa tu nombre completo.</div>
+      </div>
+      <div class="fila-2">
+        <div class="campo">
+          <label>Fecha de nacimiento *</label>
+          <input type="date" id="inp-nacimiento" oninput="verificarMenor()">
+          <div class="error-txt" id="err-nacimiento">Ingresa tu fecha de nacimiento.</div>
+        </div>
+        <div class="campo">
+          <label>WhatsApp *</label>
+          <input type="tel" id="inp-wa" placeholder="10 digitos"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <div class="error-txt" id="err-wa">Minimo 10 digitos.</div>
+        </div>
+      </div>
+      <div class="aviso-menor" id="aviso-menor">
+        Eres menor de edad. Es obligatorio venir acompanada de mama, papa o tutor legal con identificacion oficial. Sin este requisito no podremos atenderte.
+      </div>
+      <div class="campo">
+        <label>Correo electronico * <span style="font-weight:300;text-transform:none">(para tu confirmacion)</span></label>
+        <input type="email" id="inp-email" autocomplete="email">
+        <div class="error-txt" id="err-email">Ingresa un correo valido.</div>
+      </div>
+    </div>
+    <div class="footer-paso">
+      <button class="btn-sig" onclick="irPaso2()">Continuar — Elegir servicio y horario</button>
+    </div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div id="paso-2" class="oculto">
+    <a class="atras-link" onclick="irPaso1()">← Paso anterior</a>
+
+    <div class="seccion">
+      <div class="sec-titulo"><span class="sec-num">2</span> Tu cita</div>
+      <div class="campo">
+        <label>Servicio *</label>
+        <select id="inp-servicio" onchange="onServicioChange()">
+          <option value="">Cargando servicios...</option>
+        </select>
+        <div class="error-txt" id="err-servicio">Selecciona un servicio.</div>
+      </div>
+      <div class="campo oculto" id="zona-tat-grp">
+        <label>Zona del cuerpo *</label>
+        <select id="zona-tat" onchange="if(this.value==='otro') document.getElementById('zona-tat-otro').classList.remove('oculto'); else document.getElementById('zona-tat-otro').classList.add('oculto')">
+          <option value="">Selecciona la zona</option>
+          <option>Brazo / Antebrazo</option><option>Muneca / Mano</option>
+          <option>Hombro / Escapula</option><option>Pecho / Costillas</option>
+          <option>Espalda</option><option>Abdomen</option>
+          <option>Pierna / Muslo</option><option>Tobillo / Pie</option>
+          <option>Cuello / Detras de la oreja</option><option>Cabeza</option>
+          <option value="otro">Otro (especificar)</option>
+        </select>
+        <input type="text" id="zona-tat-otro" placeholder="Describe la zona..." class="oculto" style="margin-top:8px">
+        <div class="error-txt" id="err-zona-tat">Selecciona la zona del cuerpo.</div>
+      </div>
+      <div class="campo oculto" id="zona-pir-grp">
+        <label>Zona del piercing *</label>
+        <select id="zona-pir" onchange="if(this.value==='otro') document.getElementById('zona-pir-otro').classList.remove('oculto'); else document.getElementById('zona-pir-otro').classList.add('oculto')">
+          <option value="">Selecciona la zona</option>
+          <option>Lobulo</option><option>Helix / Cartilago</option>
+          <option>Tragus / Antitragus</option><option>Industrial</option>
+          <option>Septum</option><option>Fosa nasal</option>
+          <option>Labio / Philtrum</option><option>Lengua</option>
+          <option>Ceja</option><option>Ombligo</option>
+          <option>Superficie / Dermal</option>
+          <option value="otro">Otro (especificar)</option>
+        </select>
+        <input type="text" id="zona-pir-otro" placeholder="Describe la zona..." class="oculto" style="margin-top:8px">
+        <div class="error-txt" id="err-zona-pir">Selecciona la zona del piercing.</div>
+      </div>
+      <div class="fila-2">
+        <div class="campo">
+          <label>Dia *</label>
+          <select id="inp-dia" onchange="cargarHoras()">
+            <option value="">Elige un servicio primero</option>
+          </select>
+          <div class="error-txt" id="err-dia">Selecciona un dia.</div>
+        </div>
+        <div class="campo">
+          <label>Hora *</label>
+          <select id="inp-hora">
+            <option value="">Elige un dia primero</option>
+          </select>
+          <div class="error-txt" id="err-hora">Selecciona una hora.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <div class="sec-titulo"><span class="sec-num">3</span> Archivos</div>
+      <div class="campo">
+        <label>Imagen de referencia (opcional)</label>
+        <input type="file" id="inp-ref" accept="image/*" onchange="manejarArchivo('referencia', this)">
+        <div class="campo-hint">Una imagen de inspiracion para tu tatuaje o piercing.</div>
+      </div>
+      <div id="seccion-comp">
+        <div class="campo">
+          <label>Comprobante de anticipo — $<span id="monto-txt">100</span></label>
+          <input type="file" id="inp-comp" accept="image/*,.pdf" onchange="manejarArchivo('comprobante', this)">
+          <div class="campo-hint">Tu lugar queda reservado 24 horas mientras verificamos tu pago.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="seccion-cons" class="seccion">
+      <div class="sec-titulo" style="margin-bottom:12px">
+        <span style="font-size:.75rem;font-weight:500;color:var(--rosa-fuerte);text-transform:uppercase;letter-spacing:.5px">Consideraciones para tu cita</span>
+      </div>
+      <div class="cons-box"><ul id="lista-cons"></ul></div>
+    </div>
+
+    <div class="seccion">
+      <div class="sec-titulo"><span class="sec-num">4</span> Terminos y condiciones</div>
+      <div class="tyc-box">
+        <ul id="lista-tyc"><li style="list-style:none;color:var(--texto-suave);font-style:italic">Cargando...</li></ul>
+      </div>
+      <label class="check-label">
+        <input type="checkbox" id="inp-acepto">
+        He leido y acepto los terminos. Entiendo que mi cita se confirma unicamente por correo electronico.
+      </label>
+      <div class="error-txt" id="err-acepto" style="margin-top:6px">Debes aceptar los terminos para continuar.</div>
+    </div>
+
+    <div class="seccion">
+      <button class="btn-enviar" id="btn-enviar" onclick="enviarFormulario()">Enviar solicitud de cita</button>
+      <div class="spinner" id="spinner">Enviando tu informacion...</div>
+      <div class="mensaje-ok"  id="msg-ok"></div>
+      <div class="mensaje-err" id="msg-err"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  URL de la webapp de Apps Script
+// ─────────────────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYzkBbTnNcbsEpCKxB-uJSFXjjLB2_qY7qAkmG_Nn7At1qJGtahNm7wy8EhU6zyBy0/exec';
+
+// ── Estado global ─────────────────────────────────────────
+let serviciosData = [];
+const st = {
+  idClienta: '', requiereAnticipo: true,
+  servicioId: '', servicioCategoria: '', anticopoMonto: 0,
+  archivos: { referencia: null, comprobante: null }
+};
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('inp-nacimiento').max = hoy;
+  document.getElementById('inp-id-fecha').max   = hoy;
+});
+
+// ── Utilidades ────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const mostrarError = (id, v) => $(id).style.display = v ? 'block' : 'none';
+function marcarCampo(id, error) {
+  const el = $(id);
+  if (el) error ? el.classList.add('campo-error') : el.classList.remove('campo-error');
+}
+
+// ── API: GET ──────────────────────────────────────────────
+async function apiGet(action, params) {
+  const url = new URL(SCRIPT_URL);
+  url.searchParams.set('action', action);
+  if (params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, String(v)));
+  const res  = await fetch(url.toString());
+  const json = await res.json();
+  return json.data;
+}
+
+// ── API: POST ─────────────────────────────────────────────
+async function apiPost(payload) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+// ── Paso 1: ID ────────────────────────────────────────────
+async function verificarId() {
+  const id    = $('inp-id').value.trim().toUpperCase();
+  const fecha = $('inp-id-fecha').value;
+  if (!id)    { $('id-resultado').innerHTML = '<span class="id-no-encontrada">Ingresa tu ID.</span>'; return; }
+  if (!fecha) { $('id-resultado').innerHTML = '<span class="id-no-encontrada">Ingresa tu fecha de nacimiento para verificar.</span>'; return; }
+  $('id-resultado').innerHTML = '<span style="color:var(--texto-suave);font-size:.82rem">Verificando...</span>';
+  try {
+    const data = await apiGet('verificarClienta', { id, fecha });
+    if (!data) {
+      $('id-resultado').innerHTML = '<span class="id-no-encontrada">No pudimos verificar tu identidad. Revisa tu ID y fecha de nacimiento, o continua sin ID.</span>';
+      st.idClienta = ''; st.requiereAnticipo = true; return;
+    }
+    st.idClienta        = id;
+    st.requiereAnticipo = data.requiereAnticipo;
+    const saludo = data.apodo || (data.nombre ? data.nombre.split(' ')[0] : '');
+    $('id-resultado').innerHTML = '<span class="id-encontrada">Identidad confirmada — Bienvenida de regreso, ' + esc(saludo) + '</span>';
+    if (data.nombre)   $('inp-nombre').value = data.nombre;
+    if (data.whatsapp) $('inp-wa').value     = data.whatsapp;
+    if (data.email)    $('inp-email').value  = data.email;
+    $('inp-nacimiento').value = fecha;
+    verificarMenor();
+  } catch(e) {
+    $('id-resultado').innerHTML = '<span class="id-no-encontrada">Error de conexion. Intenta de nuevo.</span>';
+  }
+}
+
+function continuarSinId() {
+  st.idClienta = ''; st.requiereAnticipo = true;
+  $('id-resultado').innerHTML = '';
+  $('inp-id').value = ''; $('inp-id-fecha').value = '';
+}
+
+function verificarMenor() {
+  const val = $('inp-nacimiento').value;
+  if (!val) { $('aviso-menor').style.display = 'none'; return; }
+  const nac = new Date(val); const hoy = new Date();
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  if (hoy < new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate())) edad--;
+  $('aviso-menor').style.display = (edad < 18) ? 'block' : 'none';
+}
+
+function validarPaso1() {
+  let ok = true;
+  [
+    { id: 'inp-nombre',     err: 'err-nombre',     fn: v => v.trim().length >= 2 },
+    { id: 'inp-nacimiento', err: 'err-nacimiento', fn: v => !!v },
+    { id: 'inp-wa',         err: 'err-wa',         fn: v => /^[0-9]{10,15}$/.test(v) },
+    { id: 'inp-email',      err: 'err-email',      fn: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+  ].forEach(c => {
+    const valido = c.fn($(c.id).value);
+    marcarCampo(c.id, !valido); mostrarError(c.err, !valido);
+    if (!valido) ok = false;
+  });
+  return ok;
+}
+
+function irPaso2() {
+  if (!validarPaso1()) { window.scrollTo(0,0); return; }
+  $('paso-1').classList.add('oculto');
+  $('paso-2').classList.remove('oculto');
+  $('dot-2').classList.add('activo');
+  inicializarPaso2(); window.scrollTo(0,0);
+}
+function irPaso1() {
+  $('paso-2').classList.add('oculto');
+  $('paso-1').classList.remove('oculto');
+  $('dot-2').classList.remove('activo'); window.scrollTo(0,0);
+}
+
+// ── Paso 2 ────────────────────────────────────────────────
+let paso2Listo = false;
+function inicializarPaso2() {
+  if (paso2Listo) return;
+  paso2Listo = true;
+  cargarServicios(); cargarTyC();
+}
+
+async function cargarServicios() {
+  try {
+    const lista = await apiGet('getServicios');
+    serviciosData = lista || [];
+    const sel = $('inp-servicio');
+    if (!lista || lista.length === 0) { sel.innerHTML = '<option value="">Sin servicios disponibles</option>'; return; }
+    sel.innerHTML = '<option value="">Selecciona un servicio</option>' +
+      lista.map(sv => '<option value="' + esc(sv.id) + '">' + esc(sv.nombre) + '</option>').join('');
+  } catch(e) {
+    $('inp-servicio').innerHTML = '<option value="">Error al cargar servicios</option>';
+  }
+}
+
+function onServicioChange() {
+  const id = $('inp-servicio').value; if (!id) return;
+  const svc = serviciosData.find(s => s.id === id) || {};
+  st.servicioId = id; st.servicioCategoria = id.substring(0,3).toUpperCase(); st.anticopoMonto = svc.anticopoMonto || 0;
+  mostrarError('err-zona-tat', false); marcarCampo('zona-tat', false);
+  mostrarError('err-zona-pir', false); marcarCampo('zona-pir', false);
+  actualizarZona(); actualizarComprobante(); cargarDias(id); cargarConsideraciones(st.servicioCategoria);
+  $('inp-dia').innerHTML  = '<option value="">Buscando dias disponibles...</option>';
+  $('inp-hora').innerHTML = '<option value="">Elige un dia primero</option>';
+}
+
+function actualizarZona() {
+  $('zona-tat-grp').classList.toggle('oculto', st.servicioCategoria !== 'TAT');
+  $('zona-pir-grp').classList.toggle('oculto', st.servicioCategoria !== 'PIR');
+}
+function getZonaSeleccionada() {
+  if (st.servicioCategoria === 'TAT') { const v = $('zona-tat').value; return v === 'otro' ? $('zona-tat-otro').value.trim() : v; }
+  if (st.servicioCategoria === 'PIR') { const v = $('zona-pir').value; return v === 'otro' ? $('zona-pir-otro').value.trim() : v; }
+  return '';
+}
+function actualizarComprobante() {
+  const mostrar = st.requiereAnticipo && st.anticopoMonto > 0;
+  $('seccion-comp').style.display = mostrar ? 'block' : 'none';
+  if (mostrar) $('monto-txt').textContent = st.anticopoMonto;
+}
+
+async function cargarDias(servicioId) {
+  $('inp-dia').innerHTML = '<option value="">Buscando dias disponibles...</option>';
+  try {
+    const dias = await apiGet('getDias', { servicioId });
+    if (!dias || dias.length === 0) { $('inp-dia').innerHTML = '<option value="">Sin dias disponibles por ahora</option>'; return; }
+    $('inp-dia').innerHTML = '<option value="">Elige un dia</option>' +
+      dias.map(d => '<option value="' + esc(d) + '">' + esc(d) + '</option>').join('');
+  } catch(e) { $('inp-dia').innerHTML = '<option value="">Error al cargar dias</option>'; }
+}
+
+async function cargarHoras() {
+  const dia = $('inp-dia').value; if (!dia || !st.servicioId) return;
+  $('inp-hora').innerHTML = '<option value="">Cargando horarios...</option>';
+  try {
+    const horas = await apiGet('getHoras', { servicioId: st.servicioId, fecha: dia });
+    if (!horas || horas.length === 0) { $('inp-hora').innerHTML = '<option value="">Sin horas disponibles ese dia</option>'; return; }
+    $('inp-hora').innerHTML = '<option value="">Elige una hora</option>' +
+      horas.map(h => '<option value="' + esc(h) + '">' + esc(h) + '</option>').join('');
+  } catch(e) { $('inp-hora').innerHTML = '<option value="">Error al cargar horas</option>'; }
+}
+
+async function cargarConsideraciones(categoria) {
+  $('seccion-cons').style.display = 'none'; if (categoria === 'REV') return;
+  try {
+    const items = await apiGet('getTextos', { tipo: categoria });
+    if (!items || items.length === 0) return;
+    $('lista-cons').innerHTML = items.map(t => '<li>' + esc(t) + '</li>').join('');
+    $('seccion-cons').style.display = 'block';
+  } catch(e) {}
+}
+
+async function cargarTyC() {
+  const fallback = '<li>Al enviar aceptas el uso de tus datos para gestionar tu cita y recibir correos de confirmacion.</li>';
+  try {
+    const items = await apiGet('getTextos', { tipo: 'TYC' });
+    $('lista-tyc').innerHTML = (items && items.length > 0) ? items.map(t => '<li>' + esc(t) + '</li>').join('') : fallback;
+  } catch(e) { $('lista-tyc').innerHTML = fallback; }
+}
+
+function manejarArchivo(tipo, input) {
+  const file = input.files[0]; if (!file) { st.archivos[tipo] = null; return; }
+  const reader = new FileReader();
+  reader.onload = e => { st.archivos[tipo] = { base64: e.target.result.split(',')[1], mime: file.type, nombre: file.name }; };
+  reader.readAsDataURL(file);
+}
+
+function validarPaso2() {
+  let ok = true;
+  const svc = $('inp-servicio').value; marcarCampo('inp-servicio', !svc); mostrarError('err-servicio', !svc); if (!svc) ok = false;
+  if (st.servicioCategoria === 'TAT') { const z = $('zona-tat').value; marcarCampo('zona-tat', !z); mostrarError('err-zona-tat', !z); if (!z) ok = false; }
+  if (st.servicioCategoria === 'PIR') { const z = $('zona-pir').value; marcarCampo('zona-pir', !z); mostrarError('err-zona-pir', !z); if (!z) ok = false; }
+  const dia = $('inp-dia').value; marcarCampo('inp-dia', !dia); mostrarError('err-dia', !dia); if (!dia) ok = false;
+  const hora = $('inp-hora').value; marcarCampo('inp-hora', !hora); mostrarError('err-hora', !hora); if (!hora) ok = false;
+  const acepto = $('inp-acepto').checked; mostrarError('err-acepto', !acepto); if (!acepto) ok = false;
+  return ok;
+}
+
+async function enviarFormulario() {
+  if (!validarPaso2()) { window.scrollTo(0,0); return; }
+  $('btn-enviar').disabled = true; $('spinner').style.display = 'block';
+  $('msg-ok').style.display = 'none'; $('msg-err').style.display = 'none';
+  const datos = {
+    servicioId: st.servicioId, fecha: $('inp-dia').value, hora: $('inp-hora').value,
+    idClienta: st.idClienta, nombre: $('inp-nombre').value.trim(),
+    fecha_nacimiento: $('inp-nacimiento').value,
+    whatsapp: $('inp-wa').value, email: $('inp-email').value.trim(),
+    zona: getZonaSeleccionada()
+  };
+  const archivos = { referencia: st.archivos.referencia || null, comprobante: st.archivos.comprobante || null };
+  try {
+    const r = await apiPost({ action: 'guardarCita', datos, archivos });
+    $('spinner').style.display = 'none'; $('btn-enviar').disabled = false;
+    if (r.ok) {
+      $('msg-ok').textContent = r.mensaje + ' Tu numero de solicitud es ' + (r.idCita || '') + '.';
+      $('msg-ok').style.display = 'block';
+      setTimeout(() => location.reload(), 5000);
+    } else {
+      $('msg-err').textContent = r.mensaje; $('msg-err').style.display = 'block';
+    }
+  } catch(e) {
+    $('spinner').style.display = 'none'; $('btn-enviar').disabled = false;
+    $('msg-err').textContent = 'Error de conexion. Por favor intenta de nuevo.';
+    $('msg-err').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
